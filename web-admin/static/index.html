@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Headscale Admin</title>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<!-- Login screen -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <h1>🔒 Headscale Admin</h1>
+    <input type="password" id="login-password" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Login</button>
+    <p id="login-error" class="error"></p>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="app" style="display:none">
+  <nav>
+    <div class="nav-brand">⚡ Headscale Admin</div>
+    <div class="nav-tabs">
+      <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
+      <button class="tab" data-tab="nodes" onclick="switchTab('nodes')">Nodes</button>
+      <button class="tab" data-tab="users" onclick="switchTab('users')">Users</button>
+      <button class="tab" data-tab="keys" onclick="switchTab('keys')">Auth Keys</button>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">Logout</button>
+  </nav>
+
+  <!-- Dashboard -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">-</div>
+        <div class="stat-label">Total Nodes</div>
+      </div>
+      <div class="stat-card stat-online">
+        <div class="stat-number" id="stat-online">-</div>
+        <div class="stat-label">Online</div>
+      </div>
+      <div class="stat-card stat-offline">
+        <div class="stat-number" id="stat-offline">-</div>
+        <div class="stat-label">Offline</div>
+      </div>
+      <div class="stat-card stat-users">
+        <div class="stat-number" id="stat-users">-</div>
+        <div class="stat-label">Users</div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Recent Nodes</h3>
+      <table>
+        <thead><tr><th>Name</th><th>IP</th><th>User</th><th>Status</th><th>Last Seen</th></tr></thead>
+        <tbody id="dashboard-nodes"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Nodes -->
+  <div id="tab-nodes" class="tab-content">
+    <div class="toolbar">
+      <h2>Nodes</h2>
+      <div>
+        <button class="btn btn-primary" onclick="refreshNodes()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>IP Addresses</th>
+            <th>User</th>
+            <th>Status</th>
+            <th>Last Seen</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="nodes-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Users -->
+  <div id="tab-users" class="tab-content">
+    <div class="toolbar">
+      <h2>Users</h2>
+      <div>
+        <input type="text" id="new-user-name" placeholder="Username">
+        <button class="btn btn-primary" onclick="createUser()">+ Create User</button>
+        <button class="btn" onclick="refreshUsers()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>ID</th><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
+        <tbody id="users-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pre-auth Keys -->
+  <div id="tab-keys" class="tab-content">
+    <div class="toolbar">
+      <h2>Pre-Auth Keys</h2>
+      <div>
+        <select id="key-user-select"></select>
+        <label><input type="checkbox" id="key-reusable" checked> Reusable</label>
+        <label><input type="checkbox" id="key-ephemeral"> Ephemeral</label>
+        <input type="number" id="key-expiry" value="24" min="1" style="width:60px"> hours
+        <button class="btn btn-primary" onclick="createKey()">+ Create Key</button>
+        <button class="btn" onclick="refreshKeys()">↻ Refresh</button>
+      </div>
+    </div>
+    <div class="card">
+      <table>
+        <thead><tr><th>Key</th><th>User</th><th>Reusable</th><th>Ephemeral</th><th>Used</th><th>Expiration</th><th>Created</th></tr></thead>
+        <tbody id="keys-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+</div>
+
+<script src="static/app.js"></script>
+</body>
+</html>

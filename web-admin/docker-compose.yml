@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    restart: always
+    volumes:
+      - ./headscale/config:/etc/headscale
+      - ./headscale/data:/var/lib/headscale
+    ports:
+      - "8080:8080"
+      - "3478:3478/udp"
+    command: serve
+
+  headscale-admin:
+    build: .
+    container_name: headscale-admin
+    restart: always
+    ports:
+      - "9080:9080"
+    environment:
+      - HEADSCALE_URL=http://headscale:8080
+      - HEADSCALE_API_KEY=${HEADSCALE_API_KEY}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
+      - LISTEN_ADDR=:9080
+    depends_on:
+      - headscale
