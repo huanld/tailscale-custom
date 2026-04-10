@@ -293,9 +293,7 @@ function copyKey(key) {
 // --- Helpers ---
 
 function isOnline(node) {
-  if (!node.lastSeen) return false;
-  const diff = Date.now() - new Date(node.lastSeen).getTime();
-  return node.online === true || diff < 5 * 60 * 1000; // 5 min
+  return node.online === true;
 }
 
 function timeAgo(dateStr) {
