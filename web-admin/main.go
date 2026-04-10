@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -47,8 +48,12 @@ func main() {
 	mux.HandleFunc("/api/routes/", authMiddleware(handleRouteByID))
 	mux.HandleFunc("/api/auth", handleAuth)
 
-	// Static files
-	mux.Handle("/", http.FileServer(http.FS(staticFS)))
+	// Static files - strip "static" prefix so files are served at /
+	staticSub, err := fs.Sub(staticFS, "static")
+	if err != nil {
+		log.Fatal(err)
+	}
+	mux.Handle("/", http.FileServer(http.FS(staticSub)))
 
 	log.Printf("Headscale Web Admin starting on %s", listenAddr)
 	log.Printf("Headscale API: %s", headscaleURL)
