@@ -1,6 +1,8 @@
 // Headscale Web Admin - Frontend
 
 let adminToken = '';
+let nodesData = [];
+let usersData = [];
 
 // --- Auth ---
 
@@ -76,9 +78,6 @@ function switchTab(name) {
 }
 
 // --- Data ---
-
-let nodesData = [];
-let usersData = [];
 
 function refreshAll() {
   refreshNodes();
