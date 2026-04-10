@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+
+  <!-- Unique UpgradeCode for Tailscale-Custom (different from official Tailscale) -->
+  <Package Name="Tailscale-Custom"
+           Manufacturer="Tailscale-Custom"
+           Version="1.97.176.0"
+           UpgradeCode="E1F2A3B4-C5D6-4E7F-8A9B-0C1D2E3F4A5B"
+           Scope="perMachine"
+           Language="1033"
+           Compressed="yes">
+
+    <SummaryInformation Description="Tailscale-Custom VPN Client" />
+
+    <!-- Allow major upgrades, prevent downgrades -->
+    <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Install directory structure -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Tailscale-Custom">
+        <!-- All files go here -->
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Start Menu directory -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="TailscaleCustomMenuFolder" Name="Tailscale-Custom" />
+    </StandardDirectory>
+
+    <!-- Desktop directory -->
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- Components -->
+    <ComponentGroup Id="ProductComponents" Directory="INSTALLFOLDER">
+
+      <!-- tailscaled.exe - the daemon/service -->
+      <Component Id="TailscaledExe" Guid="A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D" Bitness="always64">
+        <File Id="tailscaled.exe"
+              Source="$(var.DistDir)\tailscaled.exe"
+              KeyPath="yes" />
+
+        <!-- Register as Windows Service -->
+        <ServiceInstall Id="TailscaleCustomService"
+                        Name="Tailscale-Custom"
+                        DisplayName="Tailscale-Custom"
+                        Description="Connects this computer to others on the Tailscale-Custom network."
+                        Type="ownProcess"
+                        Start="auto"
+                        ErrorControl="normal"
+                        Account="LocalSystem">
+          <ServiceDependency Id="Dnscache" />
+          <ServiceDependency Id="iphlpsvc" />
+          <ServiceDependency Id="netprofm" />
+          <ServiceDependency Id="WinHttpAutoProxySvc" />
+          <util:ServiceConfig FirstFailureActionType="restart"
+                              SecondFailureActionType="restart"
+                              ThirdFailureActionType="restart"
+                              RestartServiceDelayInSeconds="5"
+                              ResetPeriodInDays="1" />
+        </ServiceInstall>
+
+        <!-- Control service lifecycle during install/uninstall -->
+        <ServiceControl Id="TailscaleCustomServiceControl"
+                        Name="Tailscale-Custom"
+                        Start="install"
+                        Stop="both"
+                        Remove="uninstall"
+                        Wait="yes" />
+      </Component>
+
+      <!-- tailscale.exe - the CLI -->
+      <Component Id="TailscaleExe" Guid="B2C3D4E5-F6A7-4B8C-9D0E-1F2A3B4C5D6E" Bitness="always64">
+        <File Id="tailscale.exe"
+              Source="$(var.DistDir)\tailscale.exe"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- wintun.dll - TUN driver required by tailscaled -->
+      <Component Id="WintunDll" Guid="A7B8C9D0-E1F2-4A3B-4C5D-6E7F8A9B0C1D" Bitness="always64">
+        <File Id="wintun.dll"
+              Source="$(var.DistDir)\wintun.dll"
+              KeyPath="yes" />
+      </Component>
+
+      <!-- Add install dir to system PATH -->
+      <Component Id="PathEnv" Guid="C3D4E5F6-A7B8-4C9D-0E1F-2A3B4C5D6E7F" Bitness="always64">
+        <Environment Id="PATH"
+                     Name="PATH"
+                     Value="[INSTALLFOLDER]"
+                     Permanent="no"
+                     Part="last"
+                     Action="set"
+                     System="yes" />
+      </Component>
+
+      <!-- tailscale-tray.exe - the system tray GUI -->
+      <Component Id="TailscaleTrayExe" Guid="D4E5F6A7-B8C9-4D0E-1F2A-3B4C5D6E7F8A" Bitness="always64">
+        <File Id="tailscale_tray.exe"
+              Source="$(var.DistDir)\tailscale-tray.exe"
+              KeyPath="yes" />
+
+        <!-- Auto-start tray app on login for all users -->
+        <RegistryValue Root="HKLM"
+                       Key="SOFTWARE\Microsoft\Windows\CurrentVersion\Run"
+                       Name="Tailscale-Custom-Tray"
+                       Type="string"
+                       Value="&quot;[INSTALLFOLDER]tailscale-tray.exe&quot;" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- Start Menu Shortcut -->
+    <ComponentGroup Id="StartMenuShortcuts" Directory="TailscaleCustomMenuFolder">
+      <Component Id="StartMenuShortcut" Guid="E5F6A7B8-C9D0-4E1F-2A3B-4C5D6E7F8A9B" Bitness="always64">
+        <Shortcut Id="TrayStartMenuShortcut"
+                  Name="Tailscale-Custom"
+                  Description="Tailscale-Custom VPN Client"
+                  Target="[INSTALLFOLDER]tailscale-tray.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
+        <RegistryValue Root="HKCU" Key="Software\Tailscale-Custom" Name="StartMenuInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Desktop Shortcut -->
+    <ComponentGroup Id="DesktopShortcuts" Directory="DesktopFolder">
+      <Component Id="DesktopShortcut" Guid="F6A7B8C9-D0E1-4F2A-3B4C-5D6E7F8A9B0C" Bitness="always64">
+        <Shortcut Id="TrayDesktopShortcut"
+                  Name="Tailscale-Custom"
+                  Description="Tailscale-Custom VPN Client"
+                  Target="[INSTALLFOLDER]tailscale-tray.exe"
+                  WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKCU" Key="Software\Tailscale-Custom" Name="DesktopInstalled" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+    <!-- Feature definition -->
+    <Feature Id="ProductFeature" Title="Tailscale-Custom" Level="1">
+      <ComponentGroupRef Id="ProductComponents" />
+      <ComponentGroupRef Id="StartMenuShortcuts" />
+      <ComponentGroupRef Id="DesktopShortcuts" />
+    </Feature>
+
+    <!-- Launch tray app after install -->
+    <CustomAction Id="LaunchTray"
+                  FileRef="tailscale_tray.exe"
+                  ExeCommand=""
+                  Impersonate="yes"
+                  Return="asyncNoWait" />
+
+    <InstallExecuteSequence>
+      <Custom Action="LaunchTray" After="InstallFinalize" Condition="NOT Installed OR REINSTALL" />
+    </InstallExecuteSequence>
+
+    <!-- UI: minimal (progress bar only, no wizard dialogs) -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
+
+  </Package>
+</Wix>

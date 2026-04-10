@@ -18,7 +18,7 @@ type ConfigVAlpha struct {
 	Version string   // "alpha0" for now
 	Locked  opt.Bool `json:",omitempty"` // whether the config is locked from being changed by 'tailscale set'; it defaults to true
 
-	ServerURL *string  `json:",omitempty"` // defaults to https://controlplane.tailscale.com
+	ServerURL *string  `json:",omitempty"` // defaults to https://vpn.softs.business
 	AuthKey   *string  `json:",omitempty"` // as needed if NeedsLogin. either key or path to a file (if prefixed with "file:")
 	Enabled   opt.Bool `json:",omitempty"` // wantRunning; empty string defaults to true
 

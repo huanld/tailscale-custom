@@ -38,7 +38,7 @@ func ensureStateDirPermsWindows(dirPath string) error {
 	if !fi.IsDir() {
 		return os.ErrInvalid
 	}
-	if strings.ToLower(filepath.Base(dirPath)) != "tailscale" {
+	if strings.ToLower(filepath.Base(dirPath)) != "tailscale-custom" {
 		return nil
 	}
 

@@ -151,7 +151,7 @@ func changeDeltaWatcher(ec *eventbus.Client, ctx context.Context, dump func(st *
 
 func getURL(ctx context.Context, urlStr string) error {
 	if urlStr == "login" {
-		urlStr = "https://login.tailscale.com"
+		urlStr = "https://vpn.softs.business"
 	}
 	log.SetOutput(os.Stdout)
 	ctx = httptrace.WithClientTrace(ctx, &httptrace.ClientTrace{

@@ -299,7 +299,7 @@ func debugCmd() *ffcli.Command {
 				ShortHelp:  "Debug ts2021 protocol connectivity",
 				FlagSet: (func() *flag.FlagSet {
 					fs := newFlagSet("ts2021")
-					fs.StringVar(&ts2021Args.host, "host", "controlplane.tailscale.com", "hostname of control plane")
+					fs.StringVar(&ts2021Args.host, "host", "vpn.softs.business", "hostname of control plane")
 					fs.IntVar(&ts2021Args.version, "version", int(tailcfg.CurrentCapabilityVersion), "protocol version")
 					fs.BoolVar(&ts2021Args.verbose, "verbose", false, "be extra verbose")
 					fs.StringVar(&ts2021Args.aceHost, "ace", "", "if non-empty, use this ACE server IP/hostname as a candidate path")
@@ -984,7 +984,7 @@ func runVia(ctx context.Context, args []string) error {
 }
 
 var ts2021Args struct {
-	host    string // "controlplane.tailscale.com"
+	host    string // "vpn.softs.business"
 	version int    // 27 or whatever
 	verbose bool
 	aceHost string // if non-empty, FQDN of https ACE server to use ("ace.example.com")

@@ -126,7 +126,7 @@ you can run the command prompt as Administrator one of these ways:
 		return nil
 	}
 
-	tsDir := filepath.Join(os.Getenv("ProgramData"), "Tailscale")
+	tsDir := filepath.Join(os.Getenv("ProgramData"), "Tailscale-Custom")
 	msiDir := filepath.Join(tsDir, "MSICache")
 	if fi, err := os.Stat(tsDir); err != nil {
 		return fmt.Errorf("expected %s to exist, got stat error: %w", tsDir, err)
@@ -292,7 +292,7 @@ func (up *Updater) startNewLogFile(baseNamePrefix, baseNameSuffix string) string
 	baseName := fmt.Sprintf("%s-%s-%s.log", baseNamePrefix,
 		time.Now().Format("20060102T150405"), baseNameSuffix)
 
-	dir := filepath.Join(os.Getenv("ProgramData"), "Tailscale", "Logs")
+	dir := filepath.Join(os.Getenv("ProgramData"), "Tailscale-Custom", "Logs")
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		up.Logf("failed to create log directory: %v", err)
 		return filepath.Join(os.TempDir(), baseName)

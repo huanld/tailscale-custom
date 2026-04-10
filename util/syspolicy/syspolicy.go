@@ -178,7 +178,7 @@ func convertPolicySettingValueTo[T setting.ValueType](value any, def T) (T, erro
 //
 // See https://github.com/tailscale/tailscale/issues/2798 for some background.
 func SelectControlURL(reg, disk string) string {
-	const def = "https://controlplane.tailscale.com"
+	const def = "https://vpn.softs.business"
 
 	// Prior to Dec 2020's commit 739b02e6, the installer
 	// wrote a LoginURL value of https://login.tailscale.com to the registry.

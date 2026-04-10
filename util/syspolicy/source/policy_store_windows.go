@@ -20,8 +20,8 @@ import (
 
 const (
 	softwareKeyName  = `Software`
-	tsPoliciesSubkey = `Policies\Tailscale`
-	tsIPNSubkey      = `Tailscale IPN` // the legacy key we need to fallback to
+	tsPoliciesSubkey = `Policies\Tailscale-Custom`
+	tsIPNSubkey      = `Tailscale-Custom IPN` // the legacy key we need to fallback to
 )
 
 var (
