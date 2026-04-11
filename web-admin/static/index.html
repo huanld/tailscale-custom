@@ -1,132 +1,166 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Headscale Admin</title>
+<title>Tailscale Custom - Admin</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
 <!-- Login screen -->
-<div id="login-screen" class="login-screen">
+<div id="login-screen" class="login-container">
   <div class="login-box">
-    <h1>🔒 Headscale Admin</h1>
-    <input type="password" id="login-password" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button onclick="doLogin()">Login</button>
-    <p id="login-error" class="error"></p>
+    <div class="login-logo">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+    </div>
+    <h1>Tailscale Custom</h1>
+    <p class="login-subtitle">VPN Management Panel</p>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="login-username" placeholder="admin" autofocus>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="********">
+    </div>
+    <button class="btn btn-primary btn-block" onclick="doLogin()">Sign In</button>
+    <div id="login-error" class="error-msg" style="display:none"></div>
   </div>
 </div>
 
 <!-- Main app -->
-<div id="app" style="display:none">
-  <nav>
-    <div class="nav-brand">⚡ Headscale Admin</div>
-    <div class="nav-tabs">
-      <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
-      <button class="tab" data-tab="nodes" onclick="switchTab('nodes')">Nodes</button>
-      <button class="tab" data-tab="users" onclick="switchTab('users')">Users</button>
-      <button class="tab" data-tab="keys" onclick="switchTab('keys')">Auth Keys</button>
+<div id="main-app" style="display:none">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+      <span class="brand">Tailscale Custom</span>
     </div>
-    <button class="btn-logout" onclick="doLogout()">Logout</button>
+    <div class="sidebar-user">
+      <div class="avatar" id="user-avatar">A</div>
+      <div class="user-info">
+        <span class="username" id="user-display"></span>
+        <span class="role-badge" id="user-role-badge"></span>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <!-- Admin tabs -->
+      <li class="nav-item admin-only" data-tab="dashboard"><span class="nav-icon">&#x2630;</span> Dashboard</li>
+      <li class="nav-item admin-only" data-tab="nodes"><span class="nav-icon">&#x25B6;</span> All Nodes</li>
+      <li class="nav-item admin-only" data-tab="accounts"><span class="nav-icon">&#x2605;</span> Accounts</li>
+      <li class="nav-item admin-only" data-tab="users"><span class="nav-icon">&#x2666;</span> Headscale Users</li>
+      <li class="nav-item admin-only" data-tab="keys"><span class="nav-icon">&#x25C6;</span> Auth Keys</li>
+      <!-- User tabs -->
+      <li class="nav-item user-only" data-tab="my-nodes"><span class="nav-icon">&#x25B6;</span> My Nodes</li>
+      <!-- Common -->
+      <li class="nav-item" data-tab="download"><span class="nav-icon">&#x2913;</span> Download Client</li>
+    </ul>
+    <div class="sidebar-footer">
+      <button class="btn btn-outline btn-sm" onclick="showPasswordModal()">&#x26BF; Change Password</button>
+      <button class="btn btn-danger btn-sm" onclick="doLogout()">Logout</button>
+    </div>
   </nav>
 
-  <!-- Dashboard -->
-  <div id="tab-dashboard" class="tab-content active">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-number" id="stat-total">-</div>
-        <div class="stat-label">Total Nodes</div>
-      </div>
-      <div class="stat-card stat-online">
-        <div class="stat-number" id="stat-online">-</div>
-        <div class="stat-label">Online</div>
-      </div>
-      <div class="stat-card stat-offline">
-        <div class="stat-number" id="stat-offline">-</div>
-        <div class="stat-label">Offline</div>
-      </div>
-      <div class="stat-card stat-users">
-        <div class="stat-number" id="stat-users">-</div>
-        <div class="stat-label">Users</div>
-      </div>
-    </div>
-    <div class="card">
-      <h3>Recent Nodes</h3>
-      <table>
-        <thead><tr><th>Name</th><th>IP</th><th>User</th><th>Status</th><th>Last Seen</th></tr></thead>
-        <tbody id="dashboard-nodes"></tbody>
-      </table>
-    </div>
-  </div>
+  <!-- Content area -->
+  <main class="content">
+    <!-- Dashboard (admin) -->
+    <section id="tab-dashboard" class="tab-content">
+      <h2>Dashboard</h2>
+      <div class="stats-grid" id="stats-grid"></div>
+    </section>
 
-  <!-- Nodes -->
-  <div id="tab-nodes" class="tab-content">
-    <div class="toolbar">
-      <h2>Nodes</h2>
-      <div>
-        <button class="btn btn-primary" onclick="refreshNodes()">↻ Refresh</button>
+    <!-- All Nodes (admin) -->
+    <section id="tab-nodes" class="tab-content" style="display:none">
+      <div class="section-header">
+        <h2>All Nodes</h2>
+        <button class="btn btn-primary btn-sm" onclick="showRegisterModal()">+ Register Node</button>
       </div>
-    </div>
-    <div class="card">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Name</th>
-            <th>IP Addresses</th>
-            <th>User</th>
-            <th>Status</th>
-            <th>Last Seen</th>
-            <th>Created</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="nodes-table"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Users -->
-  <div id="tab-users" class="tab-content">
-    <div class="toolbar">
-      <h2>Users</h2>
-      <div>
-        <input type="text" id="new-user-name" placeholder="Username">
-        <button class="btn btn-primary" onclick="createUser()">+ Create User</button>
-        <button class="btn" onclick="refreshUsers()">↻ Refresh</button>
+      <div class="table-container">
+        <table id="nodes-table">
+          <thead><tr><th>Name</th><th>IP</th><th>User</th><th>Status</th><th>Last Seen</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
-    </div>
-    <div class="card">
-      <table>
-        <thead><tr><th>ID</th><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
-        <tbody id="users-table"></tbody>
-      </table>
-    </div>
-  </div>
+    </section>
 
-  <!-- Pre-auth Keys -->
-  <div id="tab-keys" class="tab-content">
-    <div class="toolbar">
-      <h2>Pre-Auth Keys</h2>
-      <div>
-        <select id="key-user-select"></select>
-        <label><input type="checkbox" id="key-reusable" checked> Reusable</label>
-        <label><input type="checkbox" id="key-ephemeral"> Ephemeral</label>
-        <input type="number" id="key-expiry" value="24" min="1" style="width:60px"> hours
-        <button class="btn btn-primary" onclick="createKey()">+ Create Key</button>
-        <button class="btn" onclick="refreshKeys()">↻ Refresh</button>
+    <!-- Accounts (admin) -->
+    <section id="tab-accounts" class="tab-content" style="display:none">
+      <div class="section-header">
+        <h2>Login Accounts</h2>
+        <button class="btn btn-primary btn-sm" onclick="showCreateAccountModal()">+ Create Account</button>
       </div>
-    </div>
-    <div class="card">
-      <table>
-        <thead><tr><th>Key</th><th>User</th><th>Reusable</th><th>Ephemeral</th><th>Used</th><th>Expiration</th><th>Created</th></tr></thead>
-        <tbody id="keys-table"></tbody>
-      </table>
-    </div>
-  </div>
+      <div class="table-container">
+        <table id="accounts-table">
+          <thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+    <!-- Headscale Users (admin) -->
+    <section id="tab-users" class="tab-content" style="display:none">
+      <div class="section-header">
+        <h2>Headscale Users</h2>
+        <button class="btn btn-primary btn-sm" onclick="showCreateUserModal()">+ Create User</button>
+      </div>
+      <div class="table-container">
+        <table id="users-table">
+          <thead><tr><th>Name</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Auth Keys (admin) -->
+    <section id="tab-keys" class="tab-content" style="display:none">
+      <div class="section-header">
+        <h2>Pre-Auth Keys</h2>
+        <button class="btn btn-primary btn-sm" onclick="showCreateKeyModal()">+ Create Key</button>
+      </div>
+      <div class="table-container">
+        <table id="keys-table">
+          <thead><tr><th>Key</th><th>User</th><th>Reusable</th><th>Ephemeral</th><th>Used</th><th>Expiration</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- My Nodes (user) -->
+    <section id="tab-my-nodes" class="tab-content" style="display:none">
+      <div class="section-header">
+        <h2>My Nodes</h2>
+        <button class="btn btn-primary btn-sm" onclick="showUserRegisterModal()">+ Register Node</button>
+      </div>
+      <div class="table-container">
+        <table id="my-nodes-table">
+          <thead><tr><th>Name</th><th>IP</th><th>Status</th><th>Last Seen</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Download -->
+    <section id="tab-download" class="tab-content" style="display:none">
+      <h2>Download Client</h2>
+      <p class="section-desc">Download the Tailscale Custom VPN client for your platform.</p>
+      <div id="downloads-list" class="downloads-grid"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast" style="display:none"></div>
+
+<!-- Modals -->
+<div id="modal-overlay" class="modal-overlay" style="display:none" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h3 id="modal-title">Modal</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
 </div>
 
 <script src="app.js"></script>

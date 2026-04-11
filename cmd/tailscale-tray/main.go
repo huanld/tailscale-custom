@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
@@ -33,6 +34,7 @@ type app struct {
 	curProfile  ipn.LoginProfile
 	allProfiles []ipn.LoginProfile
 	prevState   string // track state transitions
+	inAction    int32  // atomic flag to prevent re-entrant actions
 
 	bgCtx    context.Context
 	bgCancel context.CancelFunc
@@ -189,22 +191,12 @@ func (a *app) rebuild() {
 		login := systray.AddMenuItem("Login", "Login to server")
 		onClick(ctx, login, func() {
 			log.Println("action: Login")
-			opCtx, opCancel := context.WithTimeout(a.bgCtx, 10*time.Second)
-			defer opCancel()
-			if err := a.lc.StartLoginInteractive(opCtx); err != nil {
-				log.Printf("Login error: %v", err)
-				tailscaleExe := findTailscaleExe()
-				serverURL := a.curProfile.ControlURL
-				if serverURL == "" {
-					serverURL = "https://vpn.softs.business"
-				}
-				exec.Command(tailscaleExe, "login", "--login-server", serverURL).Start()
-			}
+			a.doLogin()
 		})
 		connect := systray.AddMenuItem("Connect", "Connect to VPN")
 		onClick(ctx, connect, func() {
 			log.Println("action: Connect")
-			a.doEditPrefs(true)
+			a.doLogin()
 		})
 	} else {
 		// Stopped or unknown
@@ -414,7 +406,53 @@ func (a *app) doEditPrefs(wantRunning bool) {
 	}
 }
 
+func (a *app) doLogin() {
+	if !atomic.CompareAndSwapInt32(&a.inAction, 0, 1) {
+		log.Println("doLogin: skipped (action in progress)")
+		return
+	}
+	defer atomic.StoreInt32(&a.inAction, 0)
+
+	serverURL := a.curProfile.ControlURL
+	if serverURL == "" {
+		serverURL = "https://vpn.softs.business"
+	}
+	log.Printf("doLogin: server=%s", serverURL)
+
+	opCtx, opCancel := context.WithTimeout(a.bgCtx, 15*time.Second)
+	defer opCancel()
+
+	// Use Start() with UpdatePrefs like official CLI does
+	err := a.lc.Start(opCtx, ipn.Options{
+		UpdatePrefs: &ipn.Prefs{
+			ControlURL:  serverURL,
+			WantRunning: true,
+		},
+	})
+	if err != nil {
+		log.Printf("doLogin: Start error: %v", err)
+	} else {
+		log.Println("doLogin: Start OK")
+	}
+
+	// Then trigger interactive login to get BrowseToURL
+	if err := a.lc.StartLoginInteractive(opCtx); err != nil {
+		log.Printf("doLogin: StartLoginInteractive error: %v", err)
+	} else {
+		log.Println("doLogin: StartLoginInteractive OK")
+	}
+
+	// Poll for AuthURL and open browser
+	a.openAuthURL()
+}
+
 func (a *app) addServer() {
+	if !atomic.CompareAndSwapInt32(&a.inAction, 0, 1) {
+		log.Println("addServer: skipped (action in progress)")
+		return
+	}
+	defer atomic.StoreInt32(&a.inAction, 0)
+
 	serverURL := inputDialog("Add Server", "Enter the control server URL:")
 	if serverURL == "" {
 		log.Println("addServer: cancelled")
@@ -428,33 +466,58 @@ func (a *app) addServer() {
 	opCtx, opCancel := context.WithTimeout(a.bgCtx, 15*time.Second)
 	defer opCancel()
 
+	// Create new empty profile for this server
 	if err := a.lc.SwitchToEmptyProfile(opCtx); err != nil {
 		log.Printf("addServer: SwitchToEmptyProfile error: %v", err)
-		showError("Failed to create profile:\n" + err.Error())
-		return
 	}
 
-	_, err := a.lc.EditPrefs(opCtx, &ipn.MaskedPrefs{
-		Prefs: ipn.Prefs{
+	// Use Start() with UpdatePrefs like official CLI does
+	err := a.lc.Start(opCtx, ipn.Options{
+		UpdatePrefs: &ipn.Prefs{
 			ControlURL:  serverURL,
 			WantRunning: true,
 		},
-		ControlURLSet:  true,
-		WantRunningSet: true,
 	})
 	if err != nil {
-		log.Printf("addServer: EditPrefs error: %v", err)
-		showError("Failed to set server:\n" + err.Error())
-		return
+		log.Printf("addServer: Start error: %v", err)
+	} else {
+		log.Println("addServer: Start OK")
 	}
 
+	// Then trigger interactive login to get BrowseToURL
 	if err := a.lc.StartLoginInteractive(opCtx); err != nil {
 		log.Printf("addServer: StartLoginInteractive error: %v", err)
-		tailscaleExe := findTailscaleExe()
-		exec.Command(tailscaleExe, "login", "--login-server", serverURL).Start()
+	} else {
+		log.Println("addServer: StartLoginInteractive OK")
 	}
+
+	// Poll for AuthURL and open browser
+	a.openAuthURL()
 	log.Println("addServer: done")
-	a.triggerRebuild()
+}
+
+// openAuthURL polls Status.AuthURL and opens the browser when available.
+func (a *app) openAuthURL() {
+	for i := 0; i < 20; i++ { // poll up to ~5 seconds
+		ctx, cancel := context.WithTimeout(a.bgCtx, 3*time.Second)
+		st, err := a.lc.Status(ctx)
+		cancel()
+		if err != nil {
+			log.Printf("openAuthURL: Status error: %v", err)
+			return
+		}
+		if st.AuthURL != "" {
+			log.Printf("openAuthURL: opening %s", st.AuthURL)
+			exec.Command("rundll32", "url.dll,FileProtocolHandler", st.AuthURL).Start()
+			return
+		}
+		if st.BackendState == "Running" {
+			log.Println("openAuthURL: already running, no auth needed")
+			return
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	log.Println("openAuthURL: timed out waiting for AuthURL")
 }
 
 // ── IPN Bus Watcher ─────────────────────────────────────
@@ -510,6 +573,7 @@ func (a *app) watchIPNBusInner() error {
 			a.triggerRebuild()
 		}
 		if url := n.BrowseToURL; url != nil {
+			log.Printf("BrowseToURL: %s", *url)
 			exec.Command("rundll32", "url.dll,FileProtocolHandler", *url).Start()
 		}
 	}
@@ -536,17 +600,6 @@ func profileTitle(p ipn.LoginProfile) string {
 		name += "  @  " + u
 	}
 	return name
-}
-
-func findTailscaleExe() string {
-	exe, err := os.Executable()
-	if err == nil {
-		candidate := filepath.Join(filepath.Dir(exe), "tailscale.exe")
-		if _, err := os.Stat(candidate); err == nil {
-			return candidate
-		}
-	}
-	return "tailscale.exe"
 }
 
 // ── Clipboard ───────────────────────────────────────────

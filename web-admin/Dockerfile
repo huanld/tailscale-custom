@@ -7,6 +7,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /headscale-admin .
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates
+RUN mkdir -p /data/downloads
 COPY --from=builder /headscale-admin /usr/local/bin/headscale-admin
 EXPOSE 9080
 ENTRYPOINT ["headscale-admin"]

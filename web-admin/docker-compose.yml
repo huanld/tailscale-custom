@@ -24,5 +24,11 @@ services:
       - HEADSCALE_API_KEY=${HEADSCALE_API_KEY}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - LISTEN_ADDR=:9080
+      - DATA_DIR=/data
+    volumes:
+      - admin-data:/data
     depends_on:
       - headscale
+
+volumes:
+  admin-data:
