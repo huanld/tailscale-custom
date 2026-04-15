@@ -1,8 +1,12 @@
-# Tailscale
+# Tailscale (Custom Fork)
 
 https://tailscale.com
 
 Private WireGuard® networks made easy
+
+> **Fork Notice:** This is a custom fork of [tailscale/tailscale](https://github.com/tailscale/tailscale),
+> maintained by **Huan Le Duc** for research and customization purposes.
+> See the [Maintainer](#maintainer) section below for contact details.
 
 ## Overview
 
@@ -81,6 +85,21 @@ see:
 
 * https://github.com/tailscale/tailscale/graphs/contributors
 * https://github.com/tailscale/tailscale-android/graphs/contributors
+
+## Maintainer
+
+This custom fork is maintained by:
+
+| Field | Details |
+|-------|---------|
+| **Name** | Huan Le Duc (Le Duc Huan) |
+| **GitHub** | [@huanld](https://github.com/huanld) |
+| **Email** | huanleduc@outlook.com |
+| **Location** | Bangkok, Thailand |
+| **Organization** | Individual / Open Source |
+
+This repository customizes Tailscale for personal infrastructure use and is published as open source
+in accordance with the original [BSD 3-Clause License](./LICENSE).
 
 ## Legal
 
